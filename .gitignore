@@ -1,0 +1,11 @@
+.venv/
+node_modules/
+__pycache__/
+frontend/dist/
+*.tsbuildinfo
+data/
+videos/
+models/
+bench_out/
+# log do compilador da GPU Intel (OpenVINO)
+kernel.errors.txt

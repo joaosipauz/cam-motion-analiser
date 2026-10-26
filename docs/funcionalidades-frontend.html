@@ -1,0 +1,531 @@
+<title>Funcionalidades do Cam Motion Analiser</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: coluna única de leitura, índice lateral fixo no desktop, fichas por funcionalidade */
+:root {
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --fg: #1d1f22;
+  --muted: #5d636b;
+  --line: #dddcd5;
+  --accent: #b86e00;        /* âmbar da "seleção" no app */
+  --accent-soft: #fbf0dc;
+  --motion: #1f8a55;        /* verde da "área de movimento" no app */
+  --motion-soft: #e3f3ea;
+  --warn: #a8361f;
+  --warn-soft: #fbe7e1;
+  --key-bg: #efeee8;
+  --font-display: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121418; --surface: #1a1d23; --fg: #e7e8ea; --muted: #9aa1ab; --line: #2c3038;
+    --accent: #f2b34d; --accent-soft: #33281a; --motion: #4dd08a; --motion-soft: #17301f;
+    --warn: #ff8b70; --warn-soft: #3a1f1a; --key-bg: #262a31; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121418; --surface: #1a1d23; --fg: #e7e8ea; --muted: #9aa1ab; --line: #2c3038;
+  --accent: #f2b34d; --accent-soft: #33281a; --motion: #4dd08a; --motion-soft: #17301f;
+  --warn: #ff8b70; --warn-soft: #3a1f1a; --key-bg: #262a31; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.6 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 80px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; } nav.toc { position: static !important; } }
+
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 14px; }
+nav.toc p { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { color: var(--muted); text-decoration: none; display: block; padding: 3px 0; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--fg); }
+
+main { min-width: 0; display: grid; gap: 56px; }
+header.doc h1 { font: 700 clamp(28px, 4vw, 40px)/1.15 var(--font-display); margin: 0 0 12px; text-wrap: balance; letter-spacing: -.01em; }
+header.doc .lede { color: var(--muted); max-width: 65ch; margin: 0; }
+header.doc .meta { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--muted); }
+
+section { display: grid; gap: 18px; scroll-margin-top: 24px; }
+section > h2 { font: 650 22px/1.25 var(--font-display); margin: 0; text-wrap: balance; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+section > p, .feature p, .feature li { max-width: 68ch; }
+p { margin: 0; }
+h3 { font: 600 17px/1.3 var(--font-display); margin: 0; }
+
+.feature { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 20px 22px; display: grid; gap: 12px; }
+.feature ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+dl.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; font-size: 15px; }
+dl.facts dt { color: var(--muted); }
+dl.facts dd { margin: 0; }
+
+kbd { font: 600 12px/1 var(--font-mono); background: var(--key-bg); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 3px 6px; white-space: nowrap; }
+code { font: 13px var(--font-mono); background: var(--key-bg); padding: 1px 5px; border-radius: 4px; }
+
+.note { border-left: 3px solid var(--line); padding: 4px 0 4px 14px; color: var(--muted); font-size: 15px; }
+.note.warn { border-color: var(--warn); color: var(--fg); background: var(--warn-soft); padding: 10px 14px; border-radius: 0 6px 6px 0; }
+.sel { color: var(--accent); font-weight: 600; }
+.mov { color: var(--motion); font-weight: 600; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: baseline; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; background: var(--bg); }
+tr:last-child td { border-bottom: none; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.glossary { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.glossary div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 4px; }
+.glossary b { font-weight: 600; }
+.glossary span { color: var(--muted); font-size: 15px; }
+
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Seções">
+    <p>Seções</p>
+    <ol>
+      <li><a href="#conceitos">Conceitos</a></li>
+      <li><a href="#biblioteca">Biblioteca de arquivos</a></li>
+      <li><a href="#analisados">Vídeos analisados</a></li>
+      <li><a href="#info">Informações do vídeo</a></li>
+      <li><a href="#preparo">Preparo e análise</a></li>
+      <li><a href="#player">Player</a></li>
+      <li><a href="#selecao">Seleção de área</a></li>
+      <li><a href="#filtro">Filtro de movimento por área</a></li>
+      <li><a href="#sensibilidade">Sensibilidade</a></li>
+      <li><a href="#timeline">Timeline</a></li>
+      <li><a href="#eventos">Lista de eventos</a></li>
+      <li><a href="#melhoria">Melhorar quadro</a></li>
+      <li><a href="#exportar">Exportar trecho</a></li>
+      <li><a href="#atalhos">Atalhos de teclado</a></li>
+      <li><a href="#mensagens">Estados e mensagens</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="doc">
+      <h1>Cam Motion Analiser: funcionalidades da interface</h1>
+      <p class="lede">Descrição de tudo o que a interface faz hoje, para servir de base a um novo protótipo. O documento explica o comportamento de cada comando e o que ele exibe. Posição, ordem e agrupamento dos elementos ficam a critério do design.</p>
+      <div class="meta"><span class="chip">MVP · só movimento</span><span class="chip">Aplicação local, no navegador</span><span class="chip">Versão de 26/10/2026</span></div>
+    </header>
+
+    <section id="conceitos">
+      <h2>Conceitos</h2>
+      <p>O usuário abre uma gravação longa de câmera de segurança (até 12 horas ou mais), o sistema encontra os momentos com movimento e permite navegar por eles, ampliar detalhes e exportar trechos. Nada sai do computador do usuário.</p>
+      <div class="glossary">
+        <div><b>Pasta de vídeos</b><span>Pasta do computador configurada na instalação. O app só enxerga o que está dentro dela e nunca altera os arquivos originais.</span></div>
+        <div><b>Análise de movimento</b><span>Varredura automática feita uma vez por vídeo. Leva cerca de 2 a 10 minutos para 12 horas, dependendo do hardware.</span></div>
+        <div><b>Evento</b><span>Intervalo contínuo de tempo com movimento acima da sensibilidade escolhida. Tem início, fim e intensidade máxima.</span></div>
+        <div><b>Intensidade</b><span>Porcentagem da área observada que mudou naquele instante. 6% significa que 6% dos pixels se mexeram.</span></div>
+        <div><b>Horário real</b><span>Hora do relógio em que a cena aconteceu (ex.: 14:32:05), calculada a partir da hora de início da gravação. Sem ela, o app mostra o tempo decorrido (ex.: 01:23:45).</span></div>
+        <div><b><span class="sel">Seleção</span></b><span>Retângulo desenhado pelo usuário sobre o vídeo. Serve de base para filtrar movimento, melhorar o quadro e exportar com melhoria.</span></div>
+        <div><b><span class="mov">Área de movimento</span></b><span>Uma seleção que foi transformada em filtro: a timeline e os eventos passam a considerar só o que acontece dentro dela.</span></div>
+        <div><b>Tarefa em segundo plano</b><span>Análise, preparo para reprodução e exportações rodam numa fila. A interface acompanha o progresso (0 a 100%) e pode ser usada enquanto isso.</span></div>
+      </div>
+    </section>
+
+    <section id="biblioteca">
+      <h2>Biblioteca de arquivos</h2>
+      <p>Navegador da pasta de vídeos. É o ponto de entrada para abrir uma gravação.</p>
+      <div class="feature">
+        <h3>Navegar por pastas</h3>
+        <ul>
+          <li>Mostra o caminho atual dentro da pasta de vídeos (a raiz aparece como <code>/</code>).</li>
+          <li>Lista as subpastas, que abrem com um clique, e os arquivos de vídeo, em ordem alfabética. Arquivos que não são vídeo e itens ocultos (começando com ponto) não aparecem.</li>
+          <li>Fora da raiz, há um item para voltar à pasta de cima.</li>
+          <li>Formatos reconhecidos: <code>.mp4</code> <code>.mkv</code> <code>.avi</code> <code>.mov</code> <code>.ts</code> <code>.m4v</code> <code>.dav</code> <code>.h264</code> <code>.h265</code>.</li>
+          <li>Pasta sem vídeos nem subpastas mostra o aviso "Pasta vazia".</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Abrir um vídeo</h3>
+        <ul>
+          <li>Cada arquivo mostra o nome e o tamanho (MB ou GB). Arquivos que já foram analisados têm uma marca de "já analisado".</li>
+          <li>Clicar num arquivo cadastra o vídeo, lê suas informações técnicas, coloca a análise de movimento na fila e abre o vídeo na área principal. Se o vídeo já foi cadastrado, ele só é aberto; a análise anterior é reaproveitada.</li>
+          <li>O vídeo é identificado pelo conteúdo, não pelo nome. Renomear ou mover o arquivo não perde a análise.</li>
+          <li>Durante a abertura (normalmente menos de 1 segundo), o arquivo mostra "abrindo…" e os outros ficam bloqueados para clique.</li>
+          <li>Se o arquivo estiver corrompido ou num formato ilegível, aparece uma mensagem de erro com o motivo.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="analisados">
+      <h2>Vídeos analisados</h2>
+      <div class="feature">
+        <h3>Lista de vídeos cadastrados</h3>
+        <ul>
+          <li>Mostra todos os vídeos já abertos, do mais recente para o mais antigo.</li>
+          <li>Cada item exibe nome do arquivo, duração, resolução (ex.: 1920x1080) e o status da análise: <em>na fila</em>, <em>analisando</em>, <em>pronto</em> ou <em>erro</em>.</li>
+          <li>O vídeo aberto no momento fica destacado. Clicar em outro troca o vídeo da área principal.</li>
+          <li>Quando não há nenhum, aparece "Nenhum ainda".</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Remover análise</h3>
+        <ul>
+          <li>Apaga do app o cadastro do vídeo, a análise, a versão preparada para o navegador e o histórico de tarefas.</li>
+          <li><strong>O arquivo original nunca é apagado.</strong> A confirmação deixa isso explícito: "Remover a análise de &lt;nome&gt;? O arquivo original não é apagado."</li>
+          <li>Se o vídeo removido estava aberto, a área principal volta ao estado vazio.</li>
+          <li>Para analisar de novo, basta abrir o arquivo pela biblioteca.</li>
+        </ul>
+        <p class="note">Hoje a confirmação usa a janela nativa do navegador; o protótipo pode trazer uma confirmação própria.</p>
+      </div>
+      <div class="feature">
+        <h3>Estado vazio da área principal</h3>
+        <p>Sem vídeo aberto, a área principal orienta: "Escolha um vídeo na pasta" e avisa que a análise começa automaticamente.</p>
+      </div>
+    </section>
+
+    <section id="info">
+      <h2>Informações do vídeo aberto</h2>
+      <div class="feature">
+        <h3>Dados técnicos</h3>
+        <p>Nome do arquivo (o caminho completo aparece ao passar o mouse), resolução, codec (ex.: h264, hevc), quadros por segundo e duração total.</p>
+      </div>
+      <div class="feature">
+        <h3>Horário de início da gravação</h3>
+        <ul>
+          <li>Mostra data e hora de início e a <strong>origem</strong> dessa informação:
+            <dl class="facts">
+              <dt>arquivo</dt><dd>extraído do nome do arquivo (ex.: <code>20261026_143200.mp4</code>)</dd>
+              <dt>metadados</dt><dd>gravado dentro do arquivo pela câmera ou pelo DVR</dd>
+              <dt>manual</dt><dd>informado pelo usuário</dd>
+              <dt>desconhecido</dt><dd>nenhuma fonte encontrada; o app mostra tempo decorrido em vez de horário</dd>
+            </dl>
+          </li>
+          <li>A origem importa porque pode estar errada. Exemplo real: um vídeo recebido pelo WhatsApp tem no nome a hora do <em>envio</em>, não a da gravação. O relógio impresso na imagem pela câmera é a referência confiável.</li>
+          <li><strong>Corrigir horário</strong>: abre um campo de data e hora com segundos. Salva ao confirmar ou ao sair do campo, e a origem passa a ser "manual". Deixar o campo vazio volta para "desconhecido".</li>
+          <li>Ao corrigir, todos os horários da tela (relógio, eixo da timeline, eventos, exportações e metadados de imagens) passam a usar o novo valor.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Relógio da cena</h3>
+        <p>Data e hora reais do quadro na posição atual de reprodução, em destaque. Atualiza continuamente enquanto o vídeo toca e a cada pulo ou busca. Sem horário de início, mostra o tempo decorrido.</p>
+      </div>
+    </section>
+
+    <section id="preparo">
+      <h2>Preparo e análise</h2>
+      <p>Logo após abrir um vídeo, duas tarefas podem estar em andamento. A interface consulta o progresso a cada segundo até as duas terminarem.</p>
+      <div class="feature">
+        <h3>Preparo para reprodução</h3>
+        <ul>
+          <li>Só acontece com vídeos que o navegador não toca direto (ex.: <code>.avi</code>, <code>.mkv</code>, <code>.dav</code>). O app gera uma cópia compatível, sem tocar no original.</li>
+          <li>Enquanto isso, no lugar do player aparece "Preparando vídeo para o navegador…" com a porcentagem. Play e navegação por evento ficam desabilitados.</li>
+          <li>Em arquivos <code>.mp4</code> comuns, esse passo não existe e o player aparece na hora.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Análise de movimento</h3>
+        <ul>
+          <li>Enquanto não termina, no lugar da timeline aparece "Analisando movimento… N%" com barra de progresso. O vídeo já pode ser assistido.</li>
+          <li>Ao terminar, timeline, eventos e sensibilidade aparecem, e o status na lista de vídeos muda para "pronto".</li>
+          <li>Em caso de falha aparece "Falha na análise:" seguido do motivo técnico.</li>
+          <li>Se o app for fechado no meio, a análise é retomada do começo na próxima abertura.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="player">
+      <h2>Player</h2>
+      <div class="feature">
+        <h3>Reprodução</h3>
+        <ul>
+          <li>O vídeo é exibido na proporção original, sem cortes nem distorção, e ocupa no máximo cerca de 60% da altura da tela.</li>
+          <li><strong>Play / Pausa</strong>: alterna a reprodução. O rótulo indica a ação disponível ("Play" quando pausado, "Pausa" quando tocando). Clicar em qualquer ponto do vídeo faz o mesmo, exceto no modo de seleção.</li>
+          <li>Não há controles nativos do navegador (barra de progresso, volume, tela cheia). A navegação no tempo é feita pela timeline, pelos eventos e pelo teclado.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Zoom digital no vídeo</h3>
+        <ul>
+          <li>A roda do mouse sobre o vídeo amplia ou reduz de 1x até 10x, mantendo fixo o ponto sob o cursor (como num mapa).</li>
+          <li>Com zoom, arrastar o vídeo move a parte visível. O movimento é limitado às bordas do quadro, sem espaço vazio.</li>
+          <li>Duplo clique volta para 1x.</li>
+          <li>Com zoom ativo, um indicador mostra o nível (ex.: "2.4x") e lembra que o duplo clique volta ao normal.</li>
+          <li>Seleções e áreas desenhadas acompanham o zoom e continuam presas aos mesmos pontos da imagem.</li>
+          <li>Zoom e arraste funcionam durante a reprodução.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Navegação por evento</h3>
+        <ul>
+          <li><strong>Evento anterior</strong> e <strong>Próximo evento</strong>: pulam para o início do evento antes ou depois da posição atual. Eventos muito próximos da posição atual (menos de 0,5 s) são ignorados, para o comando não "travar" no mesmo evento.</li>
+          <li>Ficam desabilitados até a análise terminar. Se não houver evento naquela direção, nada acontece.</li>
+          <li>A navegação respeita o filtro de área e a sensibilidade atuais.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Navegação fina</h3>
+        <p>Pelo teclado: avançar ou voltar 5 s (ou 60 s com Shift) e avançar ou voltar exatamente um quadro, o que pausa o vídeo. O quadro a quadro é essencial para achar o melhor momento de uma placa ou rosto antes de melhorar. Ver <a href="#atalhos">atalhos</a>.</p>
+      </div>
+    </section>
+
+    <section id="selecao">
+      <h2>Seleção de área</h2>
+      <p>A seleção é o retângulo que conecta três funções: filtrar movimento, melhorar quadro e exportar com melhoria.</p>
+      <div class="feature">
+        <h3>Modo de seleção</h3>
+        <ul>
+          <li><strong>Selecionar área</strong> liga e desliga o modo de desenho, também pela tecla <kbd>S</kbd>. Ligado, o comando aparece ativo e o cursor sobre o vídeo vira mira.</li>
+          <li>No modo de seleção, clicar e arrastar desenha o retângulo, com prévia em tempo real. O clique deixa de tocar ou pausar o vídeo.</li>
+          <li>Ao soltar o mouse, a seleção é criada e o modo desliga sozinho.</li>
+          <li>Retângulos muito pequenos (menos de 1% da largura ou da altura) são descartados.</li>
+          <li>Desenhar de novo substitui a seleção anterior. Só existe uma seleção por vez.</li>
+          <li>A seleção é guardada em coordenadas relativas ao quadro. Ela continua correta com zoom, em outra resolução e ao exportar.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Ações disponíveis quando há seleção</h3>
+        <dl class="facts">
+          <dt>Filtrar movimento aqui</dt><dd>transforma a seleção em <span class="mov">área de movimento</span> (ver próxima seção)</dd>
+          <dt>Melhorar quadro</dt><dd>pausa o vídeo e abre o diálogo de melhoria para a seleção no quadro atual. É a ação principal da seleção.</dd>
+          <dt>Limpar seleção</dt><dd>apaga a seleção (também por <kbd>Esc</kbd>, que além disso desliga o modo de seleção)</dd>
+        </dl>
+        <p>A exportação de trecho com melhoria também usa a seleção atual.</p>
+      </div>
+      <div class="feature">
+        <h3>Distinção visual</h3>
+        <p>A <span class="sel">seleção</span> e a <span class="mov">área de movimento</span> podem existir ao mesmo tempo e estar em lugares diferentes. Hoje se distinguem por cor, estilo de borda (tracejada × contínua) e rótulo ("seleção" × "área de movimento"). O protótipo precisa manter as duas claramente diferentes.</p>
+      </div>
+    </section>
+
+    <section id="filtro">
+      <h2>Filtro de movimento por área</h2>
+      <div class="feature">
+        <h3>Filtrar movimento aqui</h3>
+        <ul>
+          <li>Faz timeline, eventos e navegação por evento considerarem só o movimento dentro da área. Uso típico: ignorar a rua e olhar só a porta, ou ignorar uma árvore balançando.</li>
+          <li>O recálculo leva cerca de 50 ms, sem nova varredura do vídeo. Dá para testar áreas diferentes à vontade.</li>
+          <li>A área fica desenhada sobre o vídeo, separada da seleção. Depois de aplicar o filtro, a seleção pode ser limpa ou redesenhada sem afetar a área.</li>
+          <li>Precisão: a análise divide o quadro numa grade de 32 × 18 blocos. Áreas muito finas são aproximadas pelos blocos que tocam.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Remover filtro de área</h3>
+        <p>Só existe quando há filtro ativo. Volta a considerar o quadro inteiro.</p>
+      </div>
+    </section>
+
+    <section id="sensibilidade">
+      <h2>Sensibilidade</h2>
+      <div class="feature">
+        <h3>Controle de 1 a 10</h3>
+        <ul>
+          <li>Define o mínimo de movimento para algo contar como evento. Valor inicial: 7.</li>
+          <li>Quanto maior, mais eventos (inclusive pequenos). Quanto menor, só movimentos grandes. Mínimo de pixels em movimento por nível:
+            <div class="table-wrap" style="margin-top:8px">
+              <table>
+                <thead><tr><th>Nível</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr></thead>
+                <tbody><tr><td>Área em movimento</td><td class="num">12%</td><td class="num">8%</td><td class="num">5%</td><td class="num">3,5%</td><td class="num">2,5%</td><td class="num">1,8%</td><td class="num">1,2%</td><td class="num">0,8%</td><td class="num">0,5%</td><td class="num">0,3%</td></tr></tbody>
+              </table>
+            </div>
+          </li>
+          <li>O número atual aparece junto ao controle. A mudança é aplicada na hora (com atraso de ~0,1 s para não recalcular a cada pixel arrastado).</li>
+          <li>Afeta a lista de eventos, as faixas de evento e as cores das barras na timeline, e a navegação por evento.</li>
+          <li>A sensibilidade vale sobre a área filtrada, quando houver. Numa área pequena, 1,2% é proporcionalmente bem menos pixels.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="timeline">
+      <h2>Timeline</h2>
+      <p>Visão do vídeo inteiro (ou de um trecho ampliado) mostrando onde houve movimento. Precisa funcionar bem com 12 horas e milhares de eventos.</p>
+      <div class="feature">
+        <h3>O que ela exibe</h3>
+        <dl class="facts">
+          <dt>Barras de intensidade</dt><dd>uma barra por faixa de tempo (cerca de 2.000 no vídeo inteiro), com altura proporcional ao movimento. A escala é relativa ao maior pico visível, para picos não saturarem. Barras acima da sensibilidade têm cor "quente"; abaixo, cor neutra.</dd>
+          <dt>Faixas de evento</dt><dd>fundo destacado cobrindo o intervalo de cada evento</dd>
+          <dt>Trecho de exportação</dt><dd>sombreado entre o início e o fim marcados. Se só uma ponta foi marcada, o trecho vai até o começo ou o fim do vídeo.</dd>
+          <dt>Cursor</dt><dd>linha da posição atual de reprodução</dd>
+          <dt>Eixo de tempo</dt><dd>marcas com horário real (ex.: 10:45:00), alinhadas a horas cheias do relógio. O intervalo entre marcas se adapta ao zoom (de 1 s a 4 h), com cerca de uma marca a cada 90 px.</dd>
+        </dl>
+      </div>
+      <div class="feature">
+        <h3>Interações</h3>
+        <ul>
+          <li><strong>Clique</strong>: pula o vídeo para aquele instante.</li>
+          <li><strong>Roda do mouse</strong>: zoom no tempo, ancorado no ponto sob o cursor. Vai do vídeo inteiro até uma janela de 10 segundos.</li>
+          <li><strong>Arrastar</strong>: com zoom, desloca a janela de tempo. Um arraste curto (até 3 px) conta como clique.</li>
+          <li><strong>Ver tudo</strong>: só aparece com zoom ativo e volta para o vídeo inteiro.</li>
+          <li><strong>Passar o mouse</strong>: mostra o horário daquele ponto e, após uma pausa curta (~0,1 s), uma miniatura do quadro. É a forma de "espiar" o vídeo sem pular.</li>
+          <li><strong>Seguir o cursor</strong>: quando a reprodução sai da janela visível, a janela acompanha automaticamente.</li>
+          <li>Uma linha de ajuda resume as interações: roda = zoom, arrastar = mover, clique = ir ao momento.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="eventos">
+      <h2>Lista de eventos</h2>
+      <div class="feature">
+        <h3>Feed de eventos</h3>
+        <ul>
+          <li>O total de eventos aparece junto ao título e muda com sensibilidade e área.</li>
+          <li>Cada evento mostra: miniatura do quadro ~1,5 s após o início, horário real de início, duração e intensidade máxima em porcentagem.</li>
+          <li>Clicar num evento pula para o início dele.</li>
+          <li>O evento em reprodução no momento fica destacado.</li>
+          <li>Ordem cronológica. Mostra 100 por vez, com "mostrar mais (N)" para carregar os próximos 100. As miniaturas só carregam quando entram na tela.</li>
+          <li>Sem eventos: "Nenhum movimento com essa sensibilidade".</li>
+          <li>Eventos separados por menos de ~3 s de calmaria são unidos num só. Cada evento ganha uma pequena margem antes e depois.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="melhoria">
+      <h2>Melhorar quadro</h2>
+      <p>Diálogo para ampliar 4 vezes a seleção num quadro específico, tentando tornar legíveis placas, rostos e detalhes. Abre pelo comando "Melhorar quadro", que só existe com seleção, e usa o instante em que o vídeo foi pausado.</p>
+      <div class="feature">
+        <h3>Modos de melhoria</h3>
+        <p>O usuário alterna entre os modos. Cada modo mostra uma explicação curta; os modos de IA mostram um aviso de que podem inventar detalhes. Modo inicial: IA forte.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Modo</th><th>O que faz</th><th>Tempo típico</th><th>Inventa detalhe?</th></tr></thead>
+            <tbody>
+              <tr><td>Fiel</td><td>Alinha ~15 quadros vizinhos e combina. Reduz ruído e compressão usando só informação real. Melhor para objetos parados (placa de carro estacionado).</td><td class="num">~0,2 s</td><td>Não</td></tr>
+              <tr><td>IA forte</td><td>Modelo Real-ESRGAN x4plus. O mais nítido e equilibrado.</td><td class="num">~1,5 s</td><td>Pode</td></tr>
+              <tr><td>SwinIR</td><td>Modelo alternativo. Resultado mais limpo, mais lento.</td><td class="num">~5 s</td><td>Pode</td></tr>
+              <tr><td>IA rápida</td><td>Modelo compacto. Pouco ganho, quase instantâneo.</td><td class="num">~0,2 s</td><td>Pode</td></tr>
+              <tr><td>Original</td><td>Ampliação simples, sem processamento. Serve de referência para comparar.</td><td class="num">instantâneo</td><td>Não</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">A primeira melhoria de um tamanho de seleção numa sessão pode levar 3 a 5 s a mais (preparo do modelo). A interface precisa de um estado de "processando" que comporte essa espera.</p>
+      </div>
+      <div class="feature">
+        <h3>Seletor de quadros</h3>
+        <ul>
+          <li>Ao abrir, o app analisa os quadros de 2 s antes a 2 s depois do pausado e oferece o <strong>quadro pausado + os 4 mais nítidos</strong> da área (leva ~0,2 s). Enquanto procura: "procurando os mais nítidos…".</li>
+          <li>Cada opção mostra: miniatura recortada só na seleção, a distância em segundos do pausado (ex.: "+1,35 s", "−0,48 s") ou o rótulo "pausado", e uma barra de nitidez relativa (100% = o mais nítido da janela).</li>
+          <li>Opções em ordem cronológica; o quadro em uso fica destacado. Trocar de quadro refaz a melhoria no modo atual.</li>
+          <li>A melhoria só começa depois que a lista de quadros chega, para não processar duas vezes.</li>
+          <li>O título do diálogo mostra data e hora real do quadro escolhido.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Visualizador do resultado</h3>
+        <ul>
+          <li>Roda do mouse: zoom de 0,5x a 16x, ancorado no cursor. Arrastar move a imagem. Duplo clique volta a ajustar à área.</li>
+          <li>Cada combinação de modo + quadro é guardada enquanto o diálogo está aberto. Voltar a uma combinação já vista é instantâneo, o que permite comparar modos rapidamente.</li>
+          <li>Estados: "Processando…", resultado, ou mensagem de erro.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Baixar PNG</h3>
+        <ul>
+          <li>Salva a imagem ampliada do modo e quadro em exibição. Nome do arquivo: <code>melhoria_&lt;data&gt;_&lt;hora&gt;_&lt;modo&gt;.png</code>.</li>
+          <li>O PNG leva metadados embutidos: nome do vídeo, segundo exato, horário real, área, modo, fator 4x e se houve detalhe gerado por IA. Serve de registro do que foi feito com a imagem.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Limites</h3>
+        <ul>
+          <li>Seleção grande demais (acima de ~640 × 640 pixels do vídeo original): "Area muito grande para ampliar 4x; selecione uma regiao menor."</li>
+          <li>Seleção pequena demais (menos de 8 pixels): "Area muito pequena."</li>
+          <li>Modelo de IA ausente na instalação: "Modelo de IA nao instalado".</li>
+          <li>Fechar: botão de fechar, <kbd>Esc</kbd> ou clique fora do diálogo. Com o diálogo aberto, os atalhos do player ficam desativados.</li>
+        </ul>
+      </div>
+      <div class="note warn">Ponto crítico para o design: o resultado de IA <strong>parece</strong> nítido, mas pode mostrar letras de placa ou traços de rosto que não existem. O aviso precisa ser impossível de ignorar, e o modo "Fiel" precisa ser apresentado como a opção confiável para fins de prova.</div>
+    </section>
+
+    <section id="exportar">
+      <h2>Exportar trecho</h2>
+      <div class="feature">
+        <h3>Marcar o trecho</h3>
+        <ul>
+          <li><strong>Início</strong> e <strong>Fim</strong> marcam a posição atual de reprodução como ponta do trecho (também <kbd>I</kbd> e <kbd>O</kbd>). Cada ponta mostra seu horário real ou "--:--:--" se não marcada.</li>
+          <li>Marcar de novo substitui o valor. <strong>Limpar trecho</strong> apaga as duas pontas e só aparece com alguma ponta marcada.</li>
+          <li>O trecho marcado aparece sombreado na timeline.</li>
+          <li>A exportação só fica disponível com as duas pontas marcadas e o fim depois do início.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Tipo de exportação</h3>
+        <dl class="facts">
+          <dt>Rápido (sem recodificar)</dt><dd>copia o trecho sem perda e quase instantaneamente (~0,6 s para 10 s). O início pode recuar alguns segundos, até o ponto de corte possível mais próximo; o app avisa isso.</dd>
+          <dt>Corte exato</dt><dd>reprocessa o vídeo para começar e terminar no quadro exato. Um pouco mais lento (~1 s para 10 s).</dd>
+          <dt>Com melhoria IA da seleção</dt><dd>gera um vídeo só da área selecionada, ampliado 4x quadro a quadro. Exige seleção; sem ela, aparece "Desenhe uma seleção no vídeo para melhorar".</dd>
+        </dl>
+      </div>
+      <div class="feature">
+        <h3>Modelo para exportação com melhoria</h3>
+        <ul>
+          <li>Só aparece no tipo "com melhoria". Opções: IA rápida (~0,1 s por quadro, o padrão), IA forte (~1–2 s por quadro) e SwinIR (vários segundos por quadro).</li>
+          <li>Referência: 10 s de vídeo a 30 fps são 300 quadros. Com IA rápida leva ~20 s; com IA forte, 5 a 10 minutos. O design deve deixar esse custo claro antes de começar.</li>
+        </ul>
+      </div>
+      <div class="feature">
+        <h3>Acompanhar e baixar</h3>
+        <ul>
+          <li><strong>Exportar trecho</strong> coloca a exportação na fila. Várias exportações podem ser pedidas seguidas e aparecem numa lista, da mais recente para a mais antiga.</li>
+          <li>Cada item mostra "Exportando… N%" com barra de progresso, depois vira um link de download com o nome do arquivo ou "Falhou:" com o motivo.</li>
+          <li>Os arquivos ficam guardados na pasta de dados do app.</li>
+          <li>A lista mostra só as exportações pedidas desde que o vídeo foi aberto.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="atalhos">
+      <h2>Atalhos de teclado</h2>
+      <p>Valem na tela do vídeo, exceto quando o foco está num campo de texto ou com o diálogo de melhoria aberto. Hoje os atalhos ficam listados numa linha de ajuda sempre visível.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tecla</th><th>Ação</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>Espaço</kbd></td><td>Play / pausa</td></tr>
+            <tr><td><kbd>→</kbd> / <kbd>←</kbd></td><td>Avança / volta 5 s</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>→</kbd> / <kbd>←</kbd></td><td>Avança / volta 60 s</td></tr>
+            <tr><td><kbd>.</kbd> / <kbd>,</kbd></td><td>Próximo / quadro anterior (pausa o vídeo)</td></tr>
+            <tr><td><kbd>N</kbd> / <kbd>P</kbd></td><td>Próximo / evento anterior</td></tr>
+            <tr><td><kbd>I</kbd> / <kbd>O</kbd></td><td>Marca início / fim do trecho de exportação</td></tr>
+            <tr><td><kbd>S</kbd></td><td>Liga / desliga o modo de seleção</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Limpa a seleção e sai do modo de seleção; no diálogo de melhoria, fecha</td></tr>
+            <tr><td>Roda do mouse</td><td>Zoom no vídeo, na timeline ou na imagem melhorada (onde estiver o cursor)</td></tr>
+            <tr><td>Duplo clique</td><td>Volta o zoom ao normal (vídeo e imagem melhorada)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="mensagens">
+      <h2>Estados e mensagens</h2>
+      <p>Situações que o protótipo precisa prever, além dos estados normais.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Onde</th><th>Situação</th><th>Mensagem atual</th></tr></thead>
+          <tbody>
+            <tr><td>Biblioteca</td><td>Carregando a pasta</td><td>Carregando…</td></tr>
+            <tr><td>Biblioteca</td><td>Pasta sem vídeos</td><td>Pasta vazia.</td></tr>
+            <tr><td>Biblioteca</td><td>Arquivo ilegível</td><td>Não foi possível ler o vídeo: &lt;motivo&gt;</td></tr>
+            <tr><td>Biblioteca</td><td>Pasta de vídeos inexistente</td><td>Pasta não encontrada</td></tr>
+            <tr><td>Player</td><td>Gerando versão compatível</td><td>Preparando vídeo para o navegador… N%</td></tr>
+            <tr><td>Timeline</td><td>Análise em andamento</td><td>Analisando movimento… N%</td></tr>
+            <tr><td>Timeline</td><td>Análise falhou</td><td>Falha na análise: &lt;motivo&gt;</td></tr>
+            <tr><td>Eventos</td><td>Nenhum evento</td><td>Nenhum movimento com essa sensibilidade.</td></tr>
+            <tr><td>Melhoria</td><td>Processando</td><td>Processando…</td></tr>
+            <tr><td>Melhoria</td><td>Área grande / pequena demais</td><td>Ver <a href="#melhoria">limites</a></td></tr>
+            <tr><td>Exportar</td><td>Falta seleção</td><td>Desenhe uma seleção no vídeo para melhorar.</td></tr>
+            <tr><td>Exportar</td><td>Fim antes do início / além do vídeo</td><td>Fim deve ser depois do inicio / Fim além da duração do vídeo</td></tr>
+            <tr><td>Exportar</td><td>Falha na exportação</td><td>Falhou: &lt;motivo&gt;</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Várias mensagens vindas do servidor estão sem acento ("nao", "regiao"). O protótipo pode propor o texto final de todas elas.</p>
+    </section>
+  </main>
+</div>

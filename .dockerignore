@@ -1,0 +1,9 @@
+.venv
+**/node_modules
+**/__pycache__
+frontend/dist
+data
+videos
+models
+bench_out
+.claude

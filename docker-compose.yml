@@ -1,0 +1,20 @@
+services:
+  cam-motion-analiser:
+    build: .
+    image: cam-motion-analiser:latest
+    container_name: cam-motion-analiser
+    restart: unless-stopped
+    ports:
+      - "8971:8971"
+    volumes:
+      # pasta com as gravacoes (somente leitura: os originais nunca sao alterados)
+      - ${CMA_VIDEOS:-./videos}:/media:ro
+      # banco, analises, exportacoes e caches
+      - ./data:/data
+    environment:
+      CMA_HWACCEL: auto     # auto | vaapi | none
+      CMA_OV_DEVICE: AUTO   # AUTO | GPU | CPU
+    # Linux com GPU integrada Intel: descomente para acelerar decodificacao e IA.
+    # (Docker Desktop no Windows/Mac nao repassa /dev/dri; la roda so na CPU.)
+    # devices:
+    #   - /dev/dri:/dev/dri
