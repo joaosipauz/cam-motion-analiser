@@ -1,3 +1,4 @@
+# Configure as pastas e a porta no arquivo .env (copie de .env.example).
 services:
   cam-motion-analiser:
     build: .
@@ -5,16 +6,18 @@ services:
     container_name: cam-motion-analiser
     restart: unless-stopped
     ports:
-      - "8971:8971"
+      - "${CMA_PORT:-8971}:8971"
     volumes:
-      # pasta com as gravacoes (somente leitura: os originais nunca sao alterados)
-      - ${CMA_VIDEOS:-./videos}:/media:ro
-      # banco, analises, exportacoes e caches
-      - ./data:/data
+      # gravacoes (somente leitura: os originais nunca sao alterados).
+      # Tudo dentro de /media aparece no app; para mais pastas, repita a linha
+      # com outro nome, ex.: - /mnt/dvr2:/media/garagem:ro
+      - ${CMA_VIDEOS:-./videos}:/media/gravacoes:ro
+      # banco, analises, trechos salvos e caches
+      - ${CMA_DATA:-./data}:/data
     environment:
       CMA_HWACCEL: auto     # auto | vaapi | none
       CMA_OV_DEVICE: AUTO   # AUTO | GPU | CPU
     # Linux com GPU integrada Intel: descomente para acelerar decodificacao e IA.
-    # (Docker Desktop no Windows/Mac nao repassa /dev/dri; la roda so na CPU.)
+    # (Docker Desktop no Windows/Mac nao repassa a GPU integrada; la roda so na CPU.)
     # devices:
     #   - /dev/dri:/dev/dri

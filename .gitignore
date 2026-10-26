@@ -7,5 +7,6 @@ data/
 videos/
 models/
 bench_out/
+.env
 # log do compilador da GPU Intel (OpenVINO)
 kernel.errors.txt

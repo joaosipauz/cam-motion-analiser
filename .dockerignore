@@ -7,3 +7,5 @@ videos
 models
 bench_out
 .claude
+.env
+kernel.errors.txt
